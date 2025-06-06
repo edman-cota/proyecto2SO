@@ -275,27 +275,27 @@ void mostrar_ventana_sincronizacion()
     gtk_window_set_title(GTK_WINDOW(ventana), "Simulador B: Sincronización");
     gtk_window_set_default_size(GTK_WINDOW(ventana), 1000, 600);
 
-    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+    // GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
 
-    GtkWidget *controles = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+    // GtkWidget *controles = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
 
-    GtkWidget *modo_combo = gtk_combo_box_text_new();
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(modo_combo), "Mutex");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(modo_combo), "Semáforo");
-    gtk_combo_box_set_active(GTK_COMBO_BOX(modo_combo), 0);
+    // GtkWidget *modo_combo = gtk_combo_box_text_new();
+    // gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(modo_combo), "Mutex");
+    // gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(modo_combo), "Semáforo");
+    // gtk_combo_box_set_active(GTK_COMBO_BOX(modo_combo), 0);
 
-    GtkWidget *btn_proc = gtk_button_new_with_label("Cargar Procesos");
-    GtkWidget *btn_rec = gtk_button_new_with_label("Cargar Recursos");
-    GtkWidget *btn_acc = gtk_button_new_with_label("Cargar Acciones");
-    GtkWidget *btn_run = gtk_button_new_with_label("Run Simulation");
+    // GtkWidget *btn_proc = gtk_button_new_with_label("Cargar Procesos");
+    // GtkWidget *btn_rec = gtk_button_new_with_label("Cargar Recursos");
+    // GtkWidget *btn_acc = gtk_button_new_with_label("Cargar Acciones");
+    // GtkWidget *btn_run = gtk_button_new_with_label("Run Simulation");
 
-    gtk_box_pack_start(GTK_BOX(controles), gtk_label_new("Modo:"), FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(controles), modo_combo, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(controles), btn_proc, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(controles), btn_rec, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(controles), btn_acc, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(controles), btn_run, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(vbox), controles, FALSE, FALSE, 0);
+    // gtk_box_pack_start(GTK_BOX(controles), gtk_label_new("Modo:"), FALSE, FALSE, 0);
+    // gtk_box_pack_start(GTK_BOX(controles), modo_combo, FALSE, FALSE, 0);
+    // gtk_box_pack_start(GTK_BOX(controles), btn_proc, FALSE, FALSE, 0);
+    // gtk_box_pack_start(GTK_BOX(controles), btn_rec, FALSE, FALSE, 0);
+    // gtk_box_pack_start(GTK_BOX(controles), btn_acc, FALSE, FALSE, 0);
+    // gtk_box_pack_start(GTK_BOX(controles), btn_run, FALSE, FALSE, 0);
+    // gtk_box_pack_start(GTK_BOX(vbox), controles, FALSE, FALSE, 0);
 
     // Gantt + Scroll
     // GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
@@ -304,8 +304,8 @@ void mostrar_ventana_sincronizacion()
     // gtk_container_add(GTK_CONTAINER(scroll), gantt_area_b);
     // gtk_box_pack_start(GTK_BOX(vbox), scroll, TRUE, TRUE, 2);
 
-    panel_metrics_b = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
-    gtk_box_pack_start(GTK_BOX(vbox), panel_metrics_b, FALSE, FALSE, 4);
+    // panel_metrics_b = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    // gtk_box_pack_start(GTK_BOX(vbox), panel_metrics_b, FALSE, FALSE, 4);
 
     gtk_container_add(GTK_CONTAINER(ventana), vbox);
 

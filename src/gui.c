@@ -20,6 +20,8 @@ static GtkWidget *alg_check[5];
 static Process procesos[MAX_PROCESOS];
 static int num_procesos = 0;
 
+static int ciclo_actual_por_linea[MAX_LINEAS] = {0};
+
 void mostrar_ventana_inicio()
 {
     gtk_init(NULL, NULL);
@@ -68,33 +70,33 @@ static GdkRGBA color_para_pid(const char *pid)
 
 gboolean animar_gantt(gpointer data)
 {
-    if (current_ciclo >= MAX_CICLOS)
-        return FALSE;
+    gboolean continuar = FALSE;
 
     for (int l = 0; l < num_lineas; l++)
     {
-        if (current_ciclo < total_ciclos[l])
+        int c = ciclo_actual_por_linea[l];
+        if (c < total_ciclos[l])
         {
             GtkWidget *frame = gtk_frame_new(NULL);
             gtk_widget_set_size_request(frame, 25, 25);
 
             GtkWidget *event = gtk_event_box_new();
-            GtkWidget *label = gtk_label_new(timelines[l][current_ciclo].pid);
-            g_print("Linea %d, ciclo %d, pid = [%s]\n", l, current_ciclo, timelines[l][current_ciclo].pid);
-
+            GtkWidget *label = gtk_label_new(timelines[l][c].pid);
             gtk_container_add(GTK_CONTAINER(event), label);
 
-            GdkRGBA color = color_para_pid(timelines[l][current_ciclo].pid);
+            GdkRGBA color = color_para_pid(timelines[l][c].pid);
             gtk_widget_override_background_color(event, GTK_STATE_FLAG_NORMAL, &color);
 
             gtk_container_add(GTK_CONTAINER(frame), event);
             gtk_box_pack_start(GTK_BOX(lineas_gantt[l]), frame, FALSE, FALSE, 0);
+
+            ciclo_actual_por_linea[l]++;
+            continuar = TRUE; // al menos una línea sigue activa
         }
     }
 
-    current_ciclo++;
     gtk_widget_show_all(gantt_area);
-    return current_ciclo < MAX_CICLOS;
+    return continuar;
 }
 
 // Función auxiliar para dibujar una línea de bloques Gantt
@@ -138,6 +140,10 @@ static void simular_algoritmos(GtkWidget *widget, gpointer data)
 
     num_lineas = 0;
     current_ciclo = 0;
+
+    // Reiniciar contadores por línea para animación
+    for (int i = 0; i < MAX_LINEAS; i++)
+        ciclo_actual_por_linea[i] = 0;
 
     // FIFO
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(alg_check[0])))

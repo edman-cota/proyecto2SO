@@ -271,7 +271,7 @@ void mostrar_ventana_algoritmos()
 
 void mostrar_ventana_sincronizacion()
 {
-    return 0;
+    // return 0;
     // GtkWidget *ventana = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     // gtk_window_set_title(GTK_WINDOW(ventana), "Simulador B: Sincronización");
     // gtk_window_set_default_size(GTK_WINDOW(ventana), 1000, 600);

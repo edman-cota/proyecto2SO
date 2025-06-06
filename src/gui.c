@@ -94,10 +94,18 @@ static void simular_algoritmos(GtkWidget *widget, gpointer data)
         gtk_box_pack_start(GTK_BOX(linea), gtk_label_new("FIFO:"), FALSE, FALSE, 2);
         for (int i = 0; i < ciclos; i++)
         {
-            GtkWidget *lbl = gtk_label_new(timeline[i].pid);
             GtkWidget *frame = gtk_frame_new(NULL);
-            gtk_container_add(GTK_CONTAINER(frame), lbl);
-            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 1);
+            gtk_widget_set_size_request(frame, 25, 25); // Bloque cuadrado
+
+            GtkWidget *event = gtk_event_box_new();
+            GtkWidget *label = gtk_label_new(timeline[i].pid);
+            gtk_container_add(GTK_CONTAINER(event), label);
+
+            GdkRGBA color = color_para_pid(timeline[i].pid);
+            gtk_widget_override_background_color(event, GTK_STATE_FLAG_NORMAL, &color);
+
+            gtk_container_add(GTK_CONTAINER(frame), event);
+            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 0);
         }
         gtk_box_pack_start(GTK_BOX(gantt_area), linea, FALSE, FALSE, 2);
 
@@ -117,10 +125,18 @@ static void simular_algoritmos(GtkWidget *widget, gpointer data)
         gtk_box_pack_start(GTK_BOX(linea), gtk_label_new("SJF:"), FALSE, FALSE, 2);
         for (int i = 0; i < ciclos; i++)
         {
-            GtkWidget *lbl = gtk_label_new(timeline[i].pid);
             GtkWidget *frame = gtk_frame_new(NULL);
-            gtk_container_add(GTK_CONTAINER(frame), lbl);
-            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 1);
+            gtk_widget_set_size_request(frame, 25, 25); // Bloque cuadrado
+
+            GtkWidget *event = gtk_event_box_new();
+            GtkWidget *label = gtk_label_new(timeline[i].pid);
+            gtk_container_add(GTK_CONTAINER(event), label);
+
+            GdkRGBA color = color_para_pid(timeline[i].pid);
+            gtk_widget_override_background_color(event, GTK_STATE_FLAG_NORMAL, &color);
+
+            gtk_container_add(GTK_CONTAINER(frame), event);
+            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 0);
         }
         gtk_box_pack_start(GTK_BOX(gantt_area), linea, FALSE, FALSE, 2);
 
@@ -140,10 +156,18 @@ static void simular_algoritmos(GtkWidget *widget, gpointer data)
         gtk_box_pack_start(GTK_BOX(linea), gtk_label_new("SRT:"), FALSE, FALSE, 2);
         for (int i = 0; i < ciclos; i++)
         {
-            GtkWidget *lbl = gtk_label_new(timeline[i].pid);
             GtkWidget *frame = gtk_frame_new(NULL);
-            gtk_container_add(GTK_CONTAINER(frame), lbl);
-            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 1);
+            gtk_widget_set_size_request(frame, 25, 25); // Bloque cuadrado
+
+            GtkWidget *event = gtk_event_box_new();
+            GtkWidget *label = gtk_label_new(timeline[i].pid);
+            gtk_container_add(GTK_CONTAINER(event), label);
+
+            GdkRGBA color = color_para_pid(timeline[i].pid);
+            gtk_widget_override_background_color(event, GTK_STATE_FLAG_NORMAL, &color);
+
+            gtk_container_add(GTK_CONTAINER(frame), event);
+            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 0);
         }
         gtk_box_pack_start(GTK_BOX(gantt_area), linea, FALSE, FALSE, 2);
 
@@ -163,10 +187,18 @@ static void simular_algoritmos(GtkWidget *widget, gpointer data)
         gtk_box_pack_start(GTK_BOX(linea), gtk_label_new("RR:"), FALSE, FALSE, 2);
         for (int i = 0; i < ciclos; i++)
         {
-            GtkWidget *lbl = gtk_label_new(timeline[i].pid);
             GtkWidget *frame = gtk_frame_new(NULL);
-            gtk_container_add(GTK_CONTAINER(frame), lbl);
-            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 1);
+            gtk_widget_set_size_request(frame, 25, 25); // Bloque cuadrado
+
+            GtkWidget *event = gtk_event_box_new();
+            GtkWidget *label = gtk_label_new(timeline[i].pid);
+            gtk_container_add(GTK_CONTAINER(event), label);
+
+            GdkRGBA color = color_para_pid(timeline[i].pid);
+            gtk_widget_override_background_color(event, GTK_STATE_FLAG_NORMAL, &color);
+
+            gtk_container_add(GTK_CONTAINER(frame), event);
+            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 0);
         }
         gtk_box_pack_start(GTK_BOX(gantt_area), linea, FALSE, FALSE, 2);
 
@@ -186,10 +218,18 @@ static void simular_algoritmos(GtkWidget *widget, gpointer data)
         gtk_box_pack_start(GTK_BOX(linea), gtk_label_new("Priority:"), FALSE, FALSE, 2);
         for (int i = 0; i < ciclos; i++)
         {
-            GtkWidget *lbl = gtk_label_new(timeline[i].pid);
             GtkWidget *frame = gtk_frame_new(NULL);
-            gtk_container_add(GTK_CONTAINER(frame), lbl);
-            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 1);
+            gtk_widget_set_size_request(frame, 25, 25); // Bloque cuadrado
+
+            GtkWidget *event = gtk_event_box_new();
+            GtkWidget *label = gtk_label_new(timeline[i].pid);
+            gtk_container_add(GTK_CONTAINER(event), label);
+
+            GdkRGBA color = color_para_pid(timeline[i].pid);
+            gtk_widget_override_background_color(event, GTK_STATE_FLAG_NORMAL, &color);
+
+            gtk_container_add(GTK_CONTAINER(frame), event);
+            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 0);
         }
         gtk_box_pack_start(GTK_BOX(gantt_area), linea, FALSE, FALSE, 2);
 
@@ -211,6 +251,24 @@ static void cargar_archivo(GtkWidget *widget, gpointer data)
                                                GTK_BUTTONS_OK, "Procesos cargados: %d", num_procesos);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
+}
+
+static GdkRGBA color_para_pid(const char *pid)
+{
+    GdkRGBA color;
+    unsigned hash = 0;
+    for (int i = 0; pid[i]; i++)
+        hash = pid[i] + (hash << 6) + (hash << 16) - hash;
+
+    int r = (hash & 0xFF0000) >> 16;
+    int g = (hash & 0x00FF00) >> 8;
+    int b = (hash & 0x0000FF);
+
+    color.red = (double)(r % 200 + 55) / 255.0;
+    color.green = (double)(g % 200 + 55) / 255.0;
+    color.blue = (double)(b % 200 + 55) / 255.0;
+    color.alpha = 1.0;
+    return color;
 }
 
 // GUI principal para simulador A
@@ -248,7 +306,7 @@ void mostrar_ventana_algoritmos()
 
     // Área con scroll
     GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
 
     gantt_area = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_container_add(GTK_CONTAINER(scroll), gantt_area);

@@ -7,17 +7,6 @@
 
 int main()
 {
-    Process procesos[MAX_PROCESOS];
-    int cantidad = cargar_procesos("data/procesos.txt", procesos, MAX_PROCESOS);
-
-    if (cantidad <= 0)
-    {
-        printf("No se cargaron procesos.\n");
-        return 1;
-    }
-
-    fifo(procesos, cantidad);
-    iniciar_gui_fifo(procesos, cantidad);
-
+    mostrar_ventana_principal();
     return 0;
 }

@@ -3,6 +3,6 @@
 
 #include "scheduler.h"
 
-void iniciar_gui_fifo(Process* procesos, int n);
+void mostrar_ventana_principal();
 
 #endif

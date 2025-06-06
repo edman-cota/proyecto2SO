@@ -269,11 +269,11 @@ void mostrar_ventana_algoritmos()
     gtk_main();
 }
 
-void mostrar_ventana_sincronizacion()
-{
-    GtkWidget *ventana = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(ventana), "Simulador B: Sincronización");
-    gtk_window_set_default_size(GTK_WINDOW(ventana), 1000, 600);
+void mostrar_ventana_sincronizacion(){
+    return 0
+    // GtkWidget *ventana = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    // gtk_window_set_title(GTK_WINDOW(ventana), "Simulador B: Sincronización");
+    // gtk_window_set_default_size(GTK_WINDOW(ventana), 1000, 600);
 
     // GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
 
@@ -307,7 +307,7 @@ void mostrar_ventana_sincronizacion()
     // panel_metrics_b = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
     // gtk_box_pack_start(GTK_BOX(vbox), panel_metrics_b, FALSE, FALSE, 4);
 
-    gtk_container_add(GTK_CONTAINER(ventana), vbox);
+    // gtk_container_add(GTK_CONTAINER(ventana), vbox);
 
     // Conectar eventos
     // g_signal_connect(btn_proc, "clicked", G_CALLBACK(on_cargar_procesos), NULL);
@@ -315,6 +315,6 @@ void mostrar_ventana_sincronizacion()
     // g_signal_connect(btn_acc, "clicked", G_CALLBACK(on_cargar_acciones), NULL);
     // g_signal_connect(btn_run, "clicked", G_CALLBACK(on_run_simulacion_b), NULL);
 
-    g_signal_connect(ventana, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-    gtk_widget_show_all(ventana);
+    // g_signal_connect(ventana, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    // gtk_widget_show_all(ventana);
 }

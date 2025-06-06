@@ -8,7 +8,6 @@
 static Process procesos[MAX_PROCESOS];
 static int cantidad = 0;
 
-// Cargar procesos
 static gboolean cargar_procesos_autom()
 {
     cantidad = cargar_procesos("data/procesos.txt", procesos, MAX_PROCESOS);
@@ -23,7 +22,6 @@ static gboolean cargar_procesos_autom()
     return TRUE;
 }
 
-// Mostrar ventana de resultados
 static void mostrar_resultados(Process *proc, int n, const char *titulo)
 {
     GtkWidget *ventana = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -50,7 +48,6 @@ static void mostrar_resultados(Process *proc, int n, const char *titulo)
     gtk_widget_show_all(ventana);
 }
 
-// Handler para opciones de algoritmo
 static void on_seleccion_algoritmo(GtkComboBoxText *combo, gpointer user_data)
 {
     const gchar *algoritmo = gtk_combo_box_text_get_active_text(combo);
@@ -99,17 +96,14 @@ static void on_seleccion_algoritmo(GtkComboBoxText *combo, gpointer user_data)
     else if (strcmp(algoritmo, "Prioridad") == 0)
     {
         priority(procesos, cantidad);
-        mostrar_resultados(procesos, cantidad, "Prioridad con envejecimiento");
+        mostrar_resultados(procesos, cantidad, "Prioridad");
     }
 }
 
-// Ventana principal
-void mostrar_ventana_principal()
+void mostrar_ventana_algoritmos()
 {
-    gtk_init(NULL, NULL);
-
     GtkWidget *ventana = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(ventana), "Simulador de Planificación");
+    gtk_window_set_title(GTK_WINDOW(ventana), "Simulador de Algoritmos");
     gtk_window_set_default_size(GTK_WINDOW(ventana), 400, 150);
     gtk_container_set_border_width(GTK_CONTAINER(ventana), 20);
 
@@ -127,6 +121,42 @@ void mostrar_ventana_principal()
     gtk_box_pack_start(GTK_BOX(vbox), combo, FALSE, FALSE, 0);
 
     g_signal_connect(combo, "changed", G_CALLBACK(on_seleccion_algoritmo), NULL);
+    g_signal_connect(ventana, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+    gtk_container_add(GTK_CONTAINER(ventana), vbox);
+    gtk_widget_show_all(ventana);
+}
+
+void mostrar_ventana_sincronizacion()
+{
+    GtkWidget *dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL,
+                                               GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+                                               "Simulador B: Sincronización aún no implementado.\nSiguiente parte...");
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+}
+
+void mostrar_ventana_inicio()
+{
+    gtk_init(NULL, NULL);
+
+    GtkWidget *ventana = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(ventana), "Simulador Principal");
+    gtk_window_set_default_size(GTK_WINDOW(ventana), 400, 200);
+    gtk_container_set_border_width(GTK_CONTAINER(ventana), 20);
+
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 20);
+
+    GtkWidget *label = gtk_label_new("Seleccione qué simulador desea usar:");
+    GtkWidget *boton_a = gtk_button_new_with_label("A: Algoritmos de Calendarización");
+    GtkWidget *boton_b = gtk_button_new_with_label("B: Mecanismos de Sincronización");
+
+    gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), boton_a, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), boton_b, FALSE, FALSE, 0);
+
+    g_signal_connect(boton_a, "clicked", G_CALLBACK(mostrar_ventana_algoritmos), NULL);
+    g_signal_connect(boton_b, "clicked", G_CALLBACK(mostrar_ventana_sincronizacion), NULL);
     g_signal_connect(ventana, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     gtk_container_add(GTK_CONTAINER(ventana), vbox);

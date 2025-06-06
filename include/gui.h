@@ -3,6 +3,8 @@
 
 #include "scheduler.h"
 
-void mostrar_ventana_principal();
+void mostrar_ventana_inicio();
+void mostrar_ventana_algoritmos();
+void mostrar_ventana_sincronizacion();
 
 #endif

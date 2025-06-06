@@ -21,6 +21,7 @@ static Process procesos[MAX_PROCESOS];
 static int num_procesos = 0;
 
 static int ciclo_actual_por_linea[MAX_LINEAS] = {0};
+static GtkWidget *leyenda_box;
 
 void mostrar_ventana_inicio()
 {
@@ -48,6 +49,58 @@ void mostrar_ventana_inicio()
     gtk_container_add(GTK_CONTAINER(ventana), vbox);
     gtk_widget_show_all(ventana);
     gtk_main();
+}
+
+static void construir_leyenda()
+{
+    gtk_container_foreach(GTK_CONTAINER(leyenda_box), (GtkCallback)gtk_widget_destroy, NULL);
+
+    // Obtener lista única de PIDs usados
+    char vistos[MAX_PROCESOS][MAX_PID];
+    int n_vistos = 0;
+
+    for (int l = 0; l < num_lineas; l++)
+    {
+        for (int c = 0; c < total_ciclos[l]; c++)
+        {
+            const char *pid = timelines[l][c].pid;
+
+            // Ver si ya está en la lista
+            gboolean ya_agregado = FALSE;
+            for (int k = 0; k < n_vistos; k++)
+            {
+                if (strcmp(pid, vistos[k]) == 0)
+                {
+                    ya_agregado = TRUE;
+                    break;
+                }
+            }
+
+            if (!ya_agregado && strlen(pid) > 0)
+            {
+                strcpy(vistos[n_vistos++], pid);
+            }
+        }
+    }
+
+    for (int i = 0; i < n_vistos; i++)
+    {
+        GtkWidget *cuadro = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
+
+        GtkWidget *color_cuadro = gtk_event_box_new();
+        gtk_widget_set_size_request(color_cuadro, 20, 20);
+
+        GdkRGBA color = color_para_pid(vistos[i]);
+        gtk_widget_override_background_color(color_cuadro, GTK_STATE_FLAG_NORMAL, &color);
+
+        GtkWidget *label = gtk_label_new(vistos[i]);
+        gtk_box_pack_start(GTK_BOX(cuadro), color_cuadro, FALSE, FALSE, 2);
+        gtk_box_pack_start(GTK_BOX(cuadro), label, FALSE, FALSE, 2);
+
+        gtk_box_pack_start(GTK_BOX(leyenda_box), cuadro, FALSE, FALSE, 5);
+    }
+
+    gtk_widget_show_all(leyenda_box);
 }
 
 static GdkRGBA color_para_pid(const char *pid)
@@ -222,6 +275,7 @@ static void simular_algoritmos(GtkWidget *widget, gpointer data)
 
     // Lanzar animación
     g_timeout_add(1000, animar_gantt, NULL);
+    construir_leyenda();
 }
 
 // Cargar archivo procesos.txt
@@ -278,6 +332,10 @@ void mostrar_ventana_algoritmos()
     // Métricas
     metrics_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
     gtk_box_pack_start(GTK_BOX(main_vbox), metrics_box, FALSE, FALSE, 5);
+
+    // Leyenda
+    leyenda_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    gtk_box_pack_start(GTK_BOX(main_vbox), leyenda_box, FALSE, FALSE, 5);
 
     gtk_container_add(GTK_CONTAINER(ventana), main_vbox);
 

@@ -298,11 +298,11 @@ void mostrar_ventana_sincronizacion()
     gtk_box_pack_start(GTK_BOX(vbox), controles, FALSE, FALSE, 0);
 
     // Gantt + Scroll
-    GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
-    gantt_area_b = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
-    gtk_container_add(GTK_CONTAINER(scroll), gantt_area_b);
-    gtk_box_pack_start(GTK_BOX(vbox), scroll, TRUE, TRUE, 2);
+    // GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
+    // gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
+    // gantt_area_b = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    // gtk_container_add(GTK_CONTAINER(scroll), gantt_area_b);
+    // gtk_box_pack_start(GTK_BOX(vbox), scroll, TRUE, TRUE, 2);
 
     panel_metrics_b = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
     gtk_box_pack_start(GTK_BOX(vbox), panel_metrics_b, FALSE, FALSE, 4);

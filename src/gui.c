@@ -5,6 +5,14 @@
 #include "scheduler.h"
 #include "file_loader.h"
 
+#define MAX_LINEAS 5 // Máximo de algoritmos activos
+
+static GtkWidget *lineas_gantt[MAX_LINEAS]; // 1 por algoritmo
+static TimelineEntry timelines[MAX_LINEAS][MAX_CICLOS];
+static int total_ciclos[MAX_LINEAS];
+static int current_ciclo = 0;
+static int num_lineas = 0;
+
 static GtkWidget *entry_quantum;
 static GtkWidget *gantt_area;
 static GtkWidget *metrics_box;
@@ -58,6 +66,35 @@ static GdkRGBA color_para_pid(const char *pid)
     return color;
 }
 
+gboolean animar_gantt(gpointer data)
+{
+    if (current_ciclo >= MAX_CICLOS)
+        return FALSE;
+
+    for (int l = 0; l < num_lineas; l++)
+    {
+        if (current_ciclo < total_ciclos[l])
+        {
+            GtkWidget *frame = gtk_frame_new(NULL);
+            gtk_widget_set_size_request(frame, 25, 25);
+
+            GtkWidget *event = gtk_event_box_new();
+            GtkWidget *label = gtk_label_new(timelines[l][current_ciclo].pid);
+            gtk_container_add(GTK_CONTAINER(event), label);
+
+            GdkRGBA color = color_para_pid(timelines[l][current_ciclo].pid);
+            gtk_widget_override_background_color(event, GTK_STATE_FLAG_NORMAL, &color);
+
+            gtk_container_add(GTK_CONTAINER(frame), event);
+            gtk_box_pack_start(GTK_BOX(lineas_gantt[l]), frame, FALSE, FALSE, 0);
+        }
+    }
+
+    current_ciclo++;
+    gtk_widget_show_all(gantt_area);
+    return current_ciclo < MAX_CICLOS;
+}
+
 // Función auxiliar para dibujar una línea de bloques Gantt
 static GtkWidget *crear_linea_gantt(const char *label, const Process *procesos, int ciclos[], int tam)
 {
@@ -97,168 +134,86 @@ static void simular_algoritmos(GtkWidget *widget, gpointer data)
     strcpy(quantum_text, gtk_entry_get_text(GTK_ENTRY(entry_quantum)));
     int quantum = atoi(quantum_text);
 
-    TimelineEntry timeline[MAX_CICLOS];
-    int ciclos = 0;
+    num_lineas = 0;
+    current_ciclo = 0;
 
-    double avg_wt, avg_tt, avg_ct;
-
+    // FIFO
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(alg_check[0])))
     {
         Process copia[MAX_PROCESOS];
         memcpy(copia, procesos, sizeof(Process) * num_procesos);
+        simular_fifo(copia, num_procesos, timelines[num_lineas], &total_ciclos[num_lineas]);
 
-        simular_fifo(copia, num_procesos, timeline, &ciclos);
         GtkWidget *linea = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
         gtk_box_pack_start(GTK_BOX(linea), gtk_label_new("FIFO:"), FALSE, FALSE, 2);
-        for (int i = 0; i < ciclos; i++)
-        {
-            GtkWidget *frame = gtk_frame_new(NULL);
-            gtk_widget_set_size_request(frame, 25, 25); // Bloque cuadrado
-
-            GtkWidget *event = gtk_event_box_new();
-            GtkWidget *label = gtk_label_new(timeline[i].pid);
-            gtk_container_add(GTK_CONTAINER(event), label);
-
-            GdkRGBA color = color_para_pid(timeline[i].pid);
-            gtk_widget_override_background_color(event, GTK_STATE_FLAG_NORMAL, &color);
-
-            gtk_container_add(GTK_CONTAINER(frame), event);
-            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 0);
-        }
         gtk_box_pack_start(GTK_BOX(gantt_area), linea, FALSE, FALSE, 2);
 
-        calcular_metricas(copia, num_procesos, &avg_wt, &avg_tt, &avg_ct);
-        char buffer[100];
-        snprintf(buffer, sizeof(buffer), "FIFO Metrics: WT=%.2f | TT=%.2f | CT=%.2f", avg_wt, avg_tt, avg_ct);
-        gtk_box_pack_start(GTK_BOX(metrics_box), gtk_label_new(buffer), FALSE, FALSE, 2);
+        lineas_gantt[num_lineas] = linea;
+        num_lineas++;
     }
 
+    // SJF
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(alg_check[1])))
     {
         Process copia[MAX_PROCESOS];
         memcpy(copia, procesos, sizeof(Process) * num_procesos);
+        simular_sjf(copia, num_procesos, timelines[num_lineas], &total_ciclos[num_lineas]);
 
-        simular_sjf(copia, num_procesos, timeline, &ciclos);
         GtkWidget *linea = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
         gtk_box_pack_start(GTK_BOX(linea), gtk_label_new("SJF:"), FALSE, FALSE, 2);
-        for (int i = 0; i < ciclos; i++)
-        {
-            GtkWidget *frame = gtk_frame_new(NULL);
-            gtk_widget_set_size_request(frame, 25, 25); // Bloque cuadrado
-
-            GtkWidget *event = gtk_event_box_new();
-            GtkWidget *label = gtk_label_new(timeline[i].pid);
-            gtk_container_add(GTK_CONTAINER(event), label);
-
-            GdkRGBA color = color_para_pid(timeline[i].pid);
-            gtk_widget_override_background_color(event, GTK_STATE_FLAG_NORMAL, &color);
-
-            gtk_container_add(GTK_CONTAINER(frame), event);
-            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 0);
-        }
         gtk_box_pack_start(GTK_BOX(gantt_area), linea, FALSE, FALSE, 2);
 
-        calcular_metricas(copia, num_procesos, &avg_wt, &avg_tt, &avg_ct);
-        char buffer[100];
-        snprintf(buffer, sizeof(buffer), "SJF Metrics: WT=%.2f | TT=%.2f | CT=%.2f", avg_wt, avg_tt, avg_ct);
-        gtk_box_pack_start(GTK_BOX(metrics_box), gtk_label_new(buffer), FALSE, FALSE, 2);
+        lineas_gantt[num_lineas] = linea;
+        num_lineas++;
     }
 
+    // SRT
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(alg_check[2])))
     {
         Process copia[MAX_PROCESOS];
         memcpy(copia, procesos, sizeof(Process) * num_procesos);
+        simular_srt(copia, num_procesos, timelines[num_lineas], &total_ciclos[num_lineas]);
 
-        simular_srt(copia, num_procesos, timeline, &ciclos);
         GtkWidget *linea = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
         gtk_box_pack_start(GTK_BOX(linea), gtk_label_new("SRT:"), FALSE, FALSE, 2);
-        for (int i = 0; i < ciclos; i++)
-        {
-            GtkWidget *frame = gtk_frame_new(NULL);
-            gtk_widget_set_size_request(frame, 25, 25); // Bloque cuadrado
-
-            GtkWidget *event = gtk_event_box_new();
-            GtkWidget *label = gtk_label_new(timeline[i].pid);
-            gtk_container_add(GTK_CONTAINER(event), label);
-
-            GdkRGBA color = color_para_pid(timeline[i].pid);
-            gtk_widget_override_background_color(event, GTK_STATE_FLAG_NORMAL, &color);
-
-            gtk_container_add(GTK_CONTAINER(frame), event);
-            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 0);
-        }
         gtk_box_pack_start(GTK_BOX(gantt_area), linea, FALSE, FALSE, 2);
 
-        calcular_metricas(copia, num_procesos, &avg_wt, &avg_tt, &avg_ct);
-        char buffer[100];
-        snprintf(buffer, sizeof(buffer), "SRT Metrics: WT=%.2f | TT=%.2f | CT=%.2f", avg_wt, avg_tt, avg_ct);
-        gtk_box_pack_start(GTK_BOX(metrics_box), gtk_label_new(buffer), FALSE, FALSE, 2);
+        lineas_gantt[num_lineas] = linea;
+        num_lineas++;
     }
 
+    // Round Robin
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(alg_check[3])))
     {
         Process copia[MAX_PROCESOS];
         memcpy(copia, procesos, sizeof(Process) * num_procesos);
+        simular_rr(copia, num_procesos, quantum, timelines[num_lineas], &total_ciclos[num_lineas]);
 
-        simular_rr(copia, num_procesos, quantum, timeline, &ciclos);
         GtkWidget *linea = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
         gtk_box_pack_start(GTK_BOX(linea), gtk_label_new("RR:"), FALSE, FALSE, 2);
-        for (int i = 0; i < ciclos; i++)
-        {
-            GtkWidget *frame = gtk_frame_new(NULL);
-            gtk_widget_set_size_request(frame, 25, 25); // Bloque cuadrado
-
-            GtkWidget *event = gtk_event_box_new();
-            GtkWidget *label = gtk_label_new(timeline[i].pid);
-            gtk_container_add(GTK_CONTAINER(event), label);
-
-            GdkRGBA color = color_para_pid(timeline[i].pid);
-            gtk_widget_override_background_color(event, GTK_STATE_FLAG_NORMAL, &color);
-
-            gtk_container_add(GTK_CONTAINER(frame), event);
-            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 0);
-        }
         gtk_box_pack_start(GTK_BOX(gantt_area), linea, FALSE, FALSE, 2);
 
-        calcular_metricas(copia, num_procesos, &avg_wt, &avg_tt, &avg_ct);
-        char buffer[100];
-        snprintf(buffer, sizeof(buffer), "RR Metrics: WT=%.2f | TT=%.2f | CT=%.2f", avg_wt, avg_tt, avg_ct);
-        gtk_box_pack_start(GTK_BOX(metrics_box), gtk_label_new(buffer), FALSE, FALSE, 2);
+        lineas_gantt[num_lineas] = linea;
+        num_lineas++;
     }
 
+    // Prioridad
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(alg_check[4])))
     {
         Process copia[MAX_PROCESOS];
         memcpy(copia, procesos, sizeof(Process) * num_procesos);
+        simular_priority(copia, num_procesos, timelines[num_lineas], &total_ciclos[num_lineas]);
 
-        simular_priority(copia, num_procesos, timeline, &ciclos);
         GtkWidget *linea = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
         gtk_box_pack_start(GTK_BOX(linea), gtk_label_new("Priority:"), FALSE, FALSE, 2);
-        for (int i = 0; i < ciclos; i++)
-        {
-            GtkWidget *frame = gtk_frame_new(NULL);
-            gtk_widget_set_size_request(frame, 25, 25); // Bloque cuadrado
-
-            GtkWidget *event = gtk_event_box_new();
-            GtkWidget *label = gtk_label_new(timeline[i].pid);
-            gtk_container_add(GTK_CONTAINER(event), label);
-
-            GdkRGBA color = color_para_pid(timeline[i].pid);
-            gtk_widget_override_background_color(event, GTK_STATE_FLAG_NORMAL, &color);
-
-            gtk_container_add(GTK_CONTAINER(frame), event);
-            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 0);
-        }
         gtk_box_pack_start(GTK_BOX(gantt_area), linea, FALSE, FALSE, 2);
 
-        calcular_metricas(copia, num_procesos, &avg_wt, &avg_tt, &avg_ct);
-        char buffer[100];
-        snprintf(buffer, sizeof(buffer), "Priority Metrics: WT=%.2f | TT=%.2f | CT=%.2f", avg_wt, avg_tt, avg_ct);
-        gtk_box_pack_start(GTK_BOX(metrics_box), gtk_label_new(buffer), FALSE, FALSE, 2);
+        lineas_gantt[num_lineas] = linea;
+        num_lineas++;
     }
 
-    gtk_widget_show_all(gantt_area);
-    gtk_widget_show_all(metrics_box);
+    // Lanzar animación
+    g_timeout_add(100, animar_gantt, NULL);
 }
 
 // Cargar archivo procesos.txt

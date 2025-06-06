@@ -36,9 +36,6 @@ void fifo(Process *procesos, int n)
         procesos[i].turnaround_time = procesos[i].finish_time - procesos[i].arrival_time;
         tiempo = procesos[i].finish_time;
     }
-
-    imprimir_diagrama_gantt(procesos, n);
-    imprimir_metricas(procesos, n);
 }
 
 // SRT (Shortest Remaining Time)
@@ -82,9 +79,6 @@ void srt(Process *procesos, int n)
             completados++;
         }
     }
-
-    imprimir_diagrama_gantt(procesos, n);
-    imprimir_metricas(procesos, n);
 }
 
 void sjf(Process *procesos, int n)
@@ -123,9 +117,6 @@ void sjf(Process *procesos, int n)
             completados++;
         }
     }
-
-    imprimir_diagrama_gantt(procesos, n);
-    imprimir_metricas(procesos, n);
 }
 
 void round_robin(Process *procesos, int n, int quantum)
@@ -207,9 +198,6 @@ void round_robin(Process *procesos, int n, int quantum)
             completados++;
         }
     }
-
-    imprimir_diagrama_gantt(procesos, n);
-    imprimir_metricas(procesos, n);
 }
 
 // PRIORITY con envejecimiento
@@ -251,7 +239,4 @@ void priority(Process *procesos, int n)
             completados++;
         }
     }
-
-    imprimir_diagrama_gantt(procesos, n);
-    imprimir_metricas(procesos, n);
 }

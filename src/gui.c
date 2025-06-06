@@ -5,6 +5,13 @@
 #include "scheduler.h"
 #include "file_loader.h"
 
+static GtkWidget *entry_quantum;
+static GtkWidget *gantt_area;
+static GtkWidget *metrics_box;
+static GtkWidget *alg_check[5];
+static Process procesos[MAX_PROCESOS];
+static int num_procesos = 0;
+
 void mostrar_ventana_inicio()
 {
     gtk_init(NULL, NULL);

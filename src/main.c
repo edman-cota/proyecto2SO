@@ -3,6 +3,8 @@
 #include "file_loader.h"
 #include "gui.h"
 
+#define MAX_PROCESOS 100
+
 int main()
 {
     Process procesos[MAX_PROCESOS];

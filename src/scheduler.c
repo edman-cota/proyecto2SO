@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include "scheduler.h"
+
 // SRT (Shortest Remaining Time)
 void srt(Process *procesos, int n)
 {

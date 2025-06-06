@@ -80,6 +80,8 @@ gboolean animar_gantt(gpointer data)
 
             GtkWidget *event = gtk_event_box_new();
             GtkWidget *label = gtk_label_new(timelines[l][current_ciclo].pid);
+            g_print("Linea %d, ciclo %d, pid = [%s]\n", l, current_ciclo, timelines[l][current_ciclo].pid);
+
             gtk_container_add(GTK_CONTAINER(event), label);
 
             GdkRGBA color = color_para_pid(timelines[l][current_ciclo].pid);

@@ -213,7 +213,7 @@ static void simular_algoritmos(GtkWidget *widget, gpointer data)
     }
 
     // Lanzar animación
-    g_timeout_add(100, animar_gantt, NULL);
+    g_timeout_add(500, animar_gantt, NULL);
 }
 
 // Cargar archivo procesos.txt

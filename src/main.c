@@ -2,6 +2,6 @@
 
 int main()
 {
-    mostrar_ventana_algoritmos();
+    mostrar_ventana_inicio();
     return 0;
 }

@@ -5,161 +5,238 @@
 #include "scheduler.h"
 #include "file_loader.h"
 
+static GtkWidget *entry_quantum;
+static GtkWidget *gantt_area;
+static GtkWidget *metrics_box;
+static GtkWidget *alg_check[5];
 static Process procesos[MAX_PROCESOS];
-static int cantidad = 0;
+static int num_procesos = 0;
 
-static gboolean cargar_procesos_autom()
+// Función auxiliar para dibujar una línea de bloques Gantt
+static GtkWidget *crear_linea_gantt(const char *label, const Process *procesos, int ciclos[], int tam)
 {
-    cantidad = cargar_procesos("data/procesos.txt", procesos, MAX_PROCESOS);
-    if (cantidad <= 0)
+    GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+
+    GtkWidget *titulo = gtk_label_new(label);
+    gtk_widget_set_size_request(titulo, 40, -1);
+    gtk_box_pack_start(GTK_BOX(hbox), titulo, FALSE, FALSE, 5);
+
+    for (int i = 0; i < tam; i++)
     {
-        GtkWidget *dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL,
-                                                   GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "Error al cargar procesos.");
-        gtk_dialog_run(GTK_DIALOG(dialog));
-        gtk_widget_destroy(dialog);
-        return FALSE;
+        GtkWidget *frame = gtk_frame_new(NULL);
+        char texto[8];
+        snprintf(texto, sizeof(texto), "%s", procesos[ciclos[i]].pid);
+        GtkWidget *lbl = gtk_label_new(texto);
+
+        GdkRGBA color;
+        gdk_rgba_parse(&color, ciclos[i] % 2 == 0 ? "lightblue" : "lightgreen");
+        GtkWidget *event = gtk_event_box_new();
+        gtk_container_add(GTK_CONTAINER(event), lbl);
+        gtk_widget_override_background_color(event, GTK_STATE_FLAG_NORMAL, &color);
+
+        gtk_container_add(GTK_CONTAINER(frame), event);
+        gtk_box_pack_start(GTK_BOX(hbox), frame, FALSE, FALSE, 1);
     }
-    return TRUE;
+
+    return hbox;
 }
 
-static void mostrar_resultados(Process *proc, int n, const char *titulo)
+// Simular todo y mostrar resultados
+static void simular_algoritmos(GtkWidget *widget, gpointer data)
 {
-    GtkWidget *ventana = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(ventana), titulo);
-    gtk_window_set_default_size(GTK_WINDOW(ventana), 800, 200);
-    gtk_container_set_border_width(GTK_CONTAINER(ventana), 10);
+    gtk_container_foreach(GTK_CONTAINER(gantt_area), (GtkCallback)gtk_widget_destroy, NULL);
+    gtk_container_foreach(GTK_CONTAINER(metrics_box), (GtkCallback)gtk_widget_destroy, NULL);
 
-    GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
-    GtkWidget *caja = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    char quantum_text[10];
+    strcpy(quantum_text, gtk_entry_get_text(GTK_ENTRY(entry_quantum)));
+    int quantum = atoi(quantum_text);
 
-    for (int i = 0; i < n; i++)
+    TimelineEntry timeline[MAX_CICLOS];
+    int ciclos = 0;
+
+    double avg_wt, avg_tt, avg_ct;
+
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(alg_check[0])))
     {
-        GtkWidget *frame = gtk_frame_new(proc[i].pid);
-        char texto[64];
-        snprintf(texto, sizeof(texto), "BT:%d\nWT:%d", proc[i].burst_time, proc[i].waiting_time);
-        GtkWidget *label = gtk_label_new(texto);
-        gtk_container_add(GTK_CONTAINER(frame), label);
-        gtk_box_pack_start(GTK_BOX(caja), frame, FALSE, FALSE, 5);
-    }
+        Process copia[MAX_PROCESOS];
+        memcpy(copia, procesos, sizeof(Process) * num_procesos);
 
-    gtk_container_add(GTK_CONTAINER(scroll), caja);
-    gtk_container_add(GTK_CONTAINER(ventana), scroll);
-    gtk_widget_show_all(ventana);
-}
-
-static void on_seleccion_algoritmo(GtkComboBoxText *combo, gpointer user_data)
-{
-    const gchar *algoritmo = gtk_combo_box_text_get_active_text(combo);
-    if (!cargar_procesos_autom())
-        return;
-
-    if (strcmp(algoritmo, "FIFO") == 0)
-    {
-        fifo(procesos, cantidad);
-        mostrar_resultados(procesos, cantidad, "FIFO");
-    }
-    else if (strcmp(algoritmo, "SJF") == 0)
-    {
-        sjf(procesos, cantidad);
-        mostrar_resultados(procesos, cantidad, "SJF");
-    }
-    else if (strcmp(algoritmo, "SRT") == 0)
-    {
-        srt(procesos, cantidad);
-        mostrar_resultados(procesos, cantidad, "SRT");
-    }
-    else if (strcmp(algoritmo, "Round Robin") == 0)
-    {
-        GtkWidget *dialog = gtk_dialog_new_with_buttons("Quantum",
-                                                        NULL, GTK_DIALOG_MODAL,
-                                                        "_OK", GTK_RESPONSE_OK, "_Cancel", GTK_RESPONSE_CANCEL, NULL);
-
-        GtkWidget *content = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-        GtkWidget *entry = gtk_entry_new();
-        gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "Ingrese quantum");
-        gtk_container_add(GTK_CONTAINER(content), entry);
-        gtk_widget_show_all(dialog);
-
-        if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK)
+        simular_fifo(copia, num_procesos, timeline, &ciclos);
+        GtkWidget *linea = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+        gtk_box_pack_start(GTK_BOX(linea), gtk_label_new("FIFO:"), FALSE, FALSE, 2);
+        for (int i = 0; i < ciclos; i++)
         {
-            const gchar *texto = gtk_entry_get_text(GTK_ENTRY(entry));
-            int quantum = atoi(texto);
-            if (quantum > 0)
-            {
-                round_robin(procesos, cantidad, quantum);
-                mostrar_resultados(procesos, cantidad, "Round Robin");
-            }
+            GtkWidget *lbl = gtk_label_new(timeline[i].pid);
+            GtkWidget *frame = gtk_frame_new(NULL);
+            gtk_container_add(GTK_CONTAINER(frame), lbl);
+            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 1);
         }
-        gtk_widget_destroy(dialog);
+        gtk_box_pack_start(GTK_BOX(gantt_area), linea, FALSE, FALSE, 2);
+
+        calcular_metricas(copia, num_procesos, &avg_wt, &avg_tt, &avg_ct);
+        char buffer[100];
+        snprintf(buffer, sizeof(buffer), "FIFO Metrics: WT=%.2f | TT=%.2f | CT=%.2f", avg_wt, avg_tt, avg_ct);
+        gtk_box_pack_start(GTK_BOX(metrics_box), gtk_label_new(buffer), FALSE, FALSE, 2);
     }
-    else if (strcmp(algoritmo, "Prioridad") == 0)
+
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(alg_check[1])))
     {
-        priority(procesos, cantidad);
-        mostrar_resultados(procesos, cantidad, "Prioridad");
+        Process copia[MAX_PROCESOS];
+        memcpy(copia, procesos, sizeof(Process) * num_procesos);
+
+        simular_sjf(copia, num_procesos, timeline, &ciclos);
+        GtkWidget *linea = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+        gtk_box_pack_start(GTK_BOX(linea), gtk_label_new("SJF:"), FALSE, FALSE, 2);
+        for (int i = 0; i < ciclos; i++)
+        {
+            GtkWidget *lbl = gtk_label_new(timeline[i].pid);
+            GtkWidget *frame = gtk_frame_new(NULL);
+            gtk_container_add(GTK_CONTAINER(frame), lbl);
+            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 1);
+        }
+        gtk_box_pack_start(GTK_BOX(gantt_area), linea, FALSE, FALSE, 2);
+
+        calcular_metricas(copia, num_procesos, &avg_wt, &avg_tt, &avg_ct);
+        char buffer[100];
+        snprintf(buffer, sizeof(buffer), "SJF Metrics: WT=%.2f | TT=%.2f | CT=%.2f", avg_wt, avg_tt, avg_ct);
+        gtk_box_pack_start(GTK_BOX(metrics_box), gtk_label_new(buffer), FALSE, FALSE, 2);
     }
+
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(alg_check[2])))
+    {
+        Process copia[MAX_PROCESOS];
+        memcpy(copia, procesos, sizeof(Process) * num_procesos);
+
+        simular_srt(copia, num_procesos, timeline, &ciclos);
+        GtkWidget *linea = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+        gtk_box_pack_start(GTK_BOX(linea), gtk_label_new("SRT:"), FALSE, FALSE, 2);
+        for (int i = 0; i < ciclos; i++)
+        {
+            GtkWidget *lbl = gtk_label_new(timeline[i].pid);
+            GtkWidget *frame = gtk_frame_new(NULL);
+            gtk_container_add(GTK_CONTAINER(frame), lbl);
+            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 1);
+        }
+        gtk_box_pack_start(GTK_BOX(gantt_area), linea, FALSE, FALSE, 2);
+
+        calcular_metricas(copia, num_procesos, &avg_wt, &avg_tt, &avg_ct);
+        char buffer[100];
+        snprintf(buffer, sizeof(buffer), "SRT Metrics: WT=%.2f | TT=%.2f | CT=%.2f", avg_wt, avg_tt, avg_ct);
+        gtk_box_pack_start(GTK_BOX(metrics_box), gtk_label_new(buffer), FALSE, FALSE, 2);
+    }
+
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(alg_check[3])))
+    {
+        Process copia[MAX_PROCESOS];
+        memcpy(copia, procesos, sizeof(Process) * num_procesos);
+
+        simular_rr(copia, num_procesos, quantum, timeline, &ciclos);
+        GtkWidget *linea = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+        gtk_box_pack_start(GTK_BOX(linea), gtk_label_new("RR:"), FALSE, FALSE, 2);
+        for (int i = 0; i < ciclos; i++)
+        {
+            GtkWidget *lbl = gtk_label_new(timeline[i].pid);
+            GtkWidget *frame = gtk_frame_new(NULL);
+            gtk_container_add(GTK_CONTAINER(frame), lbl);
+            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 1);
+        }
+        gtk_box_pack_start(GTK_BOX(gantt_area), linea, FALSE, FALSE, 2);
+
+        calcular_metricas(copia, num_procesos, &avg_wt, &avg_tt, &avg_ct);
+        char buffer[100];
+        snprintf(buffer, sizeof(buffer), "RR Metrics: WT=%.2f | TT=%.2f | CT=%.2f", avg_wt, avg_tt, avg_ct);
+        gtk_box_pack_start(GTK_BOX(metrics_box), gtk_label_new(buffer), FALSE, FALSE, 2);
+    }
+
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(alg_check[4])))
+    {
+        Process copia[MAX_PROCESOS];
+        memcpy(copia, procesos, sizeof(Process) * num_procesos);
+
+        simular_priority(copia, num_procesos, timeline, &ciclos);
+        GtkWidget *linea = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+        gtk_box_pack_start(GTK_BOX(linea), gtk_label_new("Priority:"), FALSE, FALSE, 2);
+        for (int i = 0; i < ciclos; i++)
+        {
+            GtkWidget *lbl = gtk_label_new(timeline[i].pid);
+            GtkWidget *frame = gtk_frame_new(NULL);
+            gtk_container_add(GTK_CONTAINER(frame), lbl);
+            gtk_box_pack_start(GTK_BOX(linea), frame, FALSE, FALSE, 1);
+        }
+        gtk_box_pack_start(GTK_BOX(gantt_area), linea, FALSE, FALSE, 2);
+
+        calcular_metricas(copia, num_procesos, &avg_wt, &avg_tt, &avg_ct);
+        char buffer[100];
+        snprintf(buffer, sizeof(buffer), "Priority Metrics: WT=%.2f | TT=%.2f | CT=%.2f", avg_wt, avg_tt, avg_ct);
+        gtk_box_pack_start(GTK_BOX(metrics_box), gtk_label_new(buffer), FALSE, FALSE, 2);
+    }
+
+    gtk_widget_show_all(gantt_area);
+    gtk_widget_show_all(metrics_box);
 }
 
-void mostrar_ventana_algoritmos()
+// Cargar archivo procesos.txt
+static void cargar_archivo(GtkWidget *widget, gpointer data)
 {
-    GtkWidget *ventana = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(ventana), "Simulador de Algoritmos");
-    gtk_window_set_default_size(GTK_WINDOW(ventana), 400, 150);
-    gtk_container_set_border_width(GTK_CONTAINER(ventana), 20);
-
-    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-    GtkWidget *label = gtk_label_new("Seleccione algoritmo de planificación:");
-    GtkWidget *combo = gtk_combo_box_text_new();
-
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), "FIFO");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), "SJF");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), "SRT");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), "Round Robin");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), "Prioridad");
-
-    gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(vbox), combo, FALSE, FALSE, 0);
-
-    g_signal_connect(combo, "changed", G_CALLBACK(on_seleccion_algoritmo), NULL);
-    g_signal_connect(ventana, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-
-    gtk_container_add(GTK_CONTAINER(ventana), vbox);
-    gtk_widget_show_all(ventana);
-}
-
-void mostrar_ventana_sincronizacion()
-{
-    GtkWidget *dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL,
-                                               GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
-                                               "Simulador B: Sincronización aún no implementado.\nSiguiente parte...");
+    num_procesos = cargar_procesos("data/procesos.txt", procesos, MAX_PROCESOS);
+    GtkWidget *dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO,
+                                               GTK_BUTTONS_OK, "Procesos cargados: %d", num_procesos);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
 }
 
-void mostrar_ventana_inicio()
+// GUI principal para simulador A
+void mostrar_ventana_algoritmos()
 {
-    gtk_init(NULL, NULL);
-
     GtkWidget *ventana = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(ventana), "Simulador Principal");
-    gtk_window_set_default_size(GTK_WINDOW(ventana), 400, 200);
-    gtk_container_set_border_width(GTK_CONTAINER(ventana), 20);
+    gtk_window_set_title(GTK_WINDOW(ventana), "Simulador A: Algoritmos");
+    gtk_window_set_default_size(GTK_WINDOW(ventana), 1000, 600);
 
-    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 20);
+    GtkWidget *main_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
 
-    GtkWidget *label = gtk_label_new("Seleccione qué simulador desea usar:");
-    GtkWidget *boton_a = gtk_button_new_with_label("A: Algoritmos de Calendarización");
-    GtkWidget *boton_b = gtk_button_new_with_label("B: Mecanismos de Sincronización");
+    // Barra superior
+    GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    const char *nombres[] = {"FIFO", "SJF", "SRT", "Round Robin", "Priority"};
+    for (int i = 0; i < 5; i++)
+    {
+        alg_check[i] = gtk_check_button_new_with_label(nombres[i]);
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(alg_check[i]), TRUE);
+        gtk_box_pack_start(GTK_BOX(hbox), alg_check[i], FALSE, FALSE, 2);
+    }
 
-    gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(vbox), boton_a, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(vbox), boton_b, FALSE, FALSE, 0);
+    GtkWidget *btn_cargar = gtk_button_new_with_label("Upload Processes");
+    GtkWidget *btn_run = gtk_button_new_with_label("Run Simulation");
+    GtkWidget *lbl_q = gtk_label_new("Quantum:");
+    entry_quantum = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(entry_quantum), "2");
+    gtk_widget_set_size_request(entry_quantum, 40, -1);
 
-    g_signal_connect(boton_a, "clicked", G_CALLBACK(mostrar_ventana_algoritmos), NULL);
-    g_signal_connect(boton_b, "clicked", G_CALLBACK(mostrar_ventana_sincronizacion), NULL);
+    gtk_box_pack_start(GTK_BOX(hbox), btn_cargar, FALSE, FALSE, 5);
+    gtk_box_pack_start(GTK_BOX(hbox), btn_run, FALSE, FALSE, 5);
+    gtk_box_pack_start(GTK_BOX(hbox), lbl_q, FALSE, FALSE, 2);
+    gtk_box_pack_start(GTK_BOX(hbox), entry_quantum, FALSE, FALSE, 2);
+
+    gtk_box_pack_start(GTK_BOX(main_vbox), hbox, FALSE, FALSE, 2);
+
+    // Área con scroll
+    GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+
+    gantt_area = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_container_add(GTK_CONTAINER(scroll), gantt_area);
+    gtk_box_pack_start(GTK_BOX(main_vbox), scroll, TRUE, TRUE, 2);
+
+    // Métricas
+    metrics_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    gtk_box_pack_start(GTK_BOX(main_vbox), metrics_box, FALSE, FALSE, 5);
+
+    gtk_container_add(GTK_CONTAINER(ventana), main_vbox);
+
+    // Señales
     g_signal_connect(ventana, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(btn_cargar, "clicked", G_CALLBACK(cargar_archivo), NULL);
+    g_signal_connect(btn_run, "clicked", G_CALLBACK(simular_algoritmos), NULL);
 
-    gtk_container_add(GTK_CONTAINER(ventana), vbox);
     gtk_widget_show_all(ventana);
     gtk_main();
 }

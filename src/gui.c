@@ -12,6 +12,13 @@ static GtkWidget *alg_check[5];
 static Process procesos[MAX_PROCESOS];
 static int num_procesos = 0;
 
+static ProcesoSync procesos_sync[MAX_PROCESOS];
+static Recurso recursos[MAX_RECURSOS];
+static Accion acciones[MAX_ACCIONES];
+static int n_proc = 0, n_recur = 0, n_acc = 0;
+static GtkWidget *gantt_area_b;
+static GtkWidget *panel_metrics_b;
+
 void mostrar_ventana_inicio()
 {
     gtk_init(NULL, NULL);
@@ -269,22 +276,117 @@ void mostrar_ventana_algoritmos()
     gtk_main();
 }
 
+// --- Funciones auxiliares para cargar ---
+void on_cargar_procesos(GtkWidget *widget, gpointer data)
+{
+    n_proc = cargar_procesos_sync("data/procesos.txt", procesos_sync, MAX_PROCESOS);
+    GtkWidget *dlg = gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+                                            "Procesos cargados: %d", n_proc);
+    gtk_dialog_run(GTK_DIALOG(dlg));
+    gtk_widget_destroy(dlg);
+}
+
+void on_cargar_recursos(GtkWidget *widget, gpointer data)
+{
+    n_recur = cargar_recursos("data/recursos.txt", recursos, MAX_RECURSOS);
+    GtkWidget *dlg = gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+                                            "Recursos cargados: %d", n_recur);
+    gtk_dialog_run(GTK_DIALOG(dlg));
+    gtk_widget_destroy(dlg);
+}
+
+void on_cargar_acciones(GtkWidget *widget, gpointer data)
+{
+    n_acc = cargar_acciones("data/acciones.txt", acciones, MAX_ACCIONES);
+    GtkWidget *dlg = gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+                                            "Acciones cargadas: %d", n_acc);
+    gtk_dialog_run(GTK_DIALOG(dlg));
+    gtk_widget_destroy(dlg);
+}
+
+// --- Simulación real (estática por ahora) ---
+void on_run_simulacion_b(GtkWidget *widget, gpointer data)
+{
+    gtk_container_foreach(GTK_CONTAINER(gantt_area_b), (GtkCallback)gtk_widget_destroy, NULL);
+    gtk_container_foreach(GTK_CONTAINER(panel_metrics_b), (GtkCallback)gtk_widget_destroy, NULL);
+
+    int estado_recursos[MAX_RECURSOS];
+    for (int i = 0; i < n_recur; i++)
+        estado_recursos[i] = recursos[i].contador;
+
+    for (int i = 0; i < n_proc; i++)
+    {
+        GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+        gtk_box_pack_start(GTK_BOX(hbox), gtk_label_new(procesos_sync[i].pid), FALSE, FALSE, 4);
+
+        for (int ciclo = 0; ciclo < 50; ciclo++)
+        {
+            int accion_idx = -1;
+            for (int a = 0; a < n_acc; a++)
+            {
+                if (strcmp(acciones[a].pid, procesos_sync[i].pid) == 0 && acciones[a].ciclo == ciclo)
+                {
+                    accion_idx = a;
+                    break;
+                }
+            }
+
+            GtkWidget *lbl, *frame = gtk_frame_new(NULL), *event = gtk_event_box_new();
+            GdkRGBA color;
+
+            if (accion_idx != -1)
+            {
+                const char *recurso_nombre = acciones[accion_idx].recurso;
+                int recurso_idx = -1;
+                for (int r = 0; r < n_recur; r++)
+                {
+                    if (strcmp(recursos[r].nombre, recurso_nombre) == 0)
+                    {
+                        recurso_idx = r;
+                        break;
+                    }
+                }
+
+                if (recurso_idx != -1 && estado_recursos[recurso_idx] > 0)
+                {
+                    estado_recursos[recurso_idx]--;
+                    lbl = gtk_label_new("A");
+                    gdk_rgba_parse(&color, "lightgreen");
+                }
+                else
+                {
+                    lbl = gtk_label_new("W");
+                    gdk_rgba_parse(&color, "lightcoral");
+                }
+            }
+            else
+            {
+                lbl = gtk_label_new(" ");
+                gdk_rgba_parse(&color, "lightgray");
+            }
+
+            gtk_container_add(GTK_CONTAINER(event), lbl);
+            gtk_widget_override_background_color(event, GTK_STATE_FLAG_NORMAL, &color);
+            gtk_container_add(GTK_CONTAINER(frame), event);
+            gtk_box_pack_start(GTK_BOX(hbox), frame, FALSE, FALSE, 1);
+        }
+
+        gtk_box_pack_start(GTK_BOX(gantt_area_b), hbox, FALSE, FALSE, 2);
+    }
+
+    gtk_box_pack_start(GTK_BOX(panel_metrics_b), gtk_label_new("✅ Simulación ejecutada correctamente."), FALSE, FALSE, 2);
+    gtk_widget_show_all(gantt_area_b);
+    gtk_widget_show_all(panel_metrics_b);
+}
+
 void mostrar_ventana_sincronizacion()
 {
-    gtk_init(NULL, NULL);
-
-    static ProcesoSync procesos[MAX_PROCESOS];
-    static Recurso recursos[MAX_RECURSOS];
-    static Accion acciones[MAX_ACCIONES];
-    static int n_proc = 0, n_recur = 0, n_acc = 0;
-
     GtkWidget *ventana = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(ventana), "Simulador B: Sincronización");
     gtk_window_set_default_size(GTK_WINDOW(ventana), 1000, 600);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
 
-    // 🔼 Controles superiores
     GtkWidget *controles = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
 
     GtkWidget *modo_combo = gtk_combo_box_text_new();
@@ -305,85 +407,24 @@ void mostrar_ventana_sincronizacion()
     gtk_box_pack_start(GTK_BOX(controles), btn_run, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), controles, FALSE, FALSE, 0);
 
-    // 📈 Zona Gantt con scroll
+    // Gantt + Scroll
     GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
-    GtkWidget *gantt_area = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
-    gtk_container_add(GTK_CONTAINER(scroll), gantt_area);
+    gantt_area_b = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    gtk_container_add(GTK_CONTAINER(scroll), gantt_area_b);
     gtk_box_pack_start(GTK_BOX(vbox), scroll, TRUE, TRUE, 2);
 
-    // 📊 Panel inferior
-    GtkWidget *panel_metrics = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
-    gtk_box_pack_start(GTK_BOX(vbox), panel_metrics, FALSE, FALSE, 4);
+    panel_metrics_b = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    gtk_box_pack_start(GTK_BOX(vbox), panel_metrics_b, FALSE, FALSE, 4);
 
     gtk_container_add(GTK_CONTAINER(ventana), vbox);
 
-    // 📂 Funciones cargar
-    g_signal_connect(btn_proc, "clicked", G_CALLBACK(+[](GtkWidget *b, gpointer d)
-                                                     {
-                                                         n_proc = cargar_procesos_sync("data/procesos.txt", procesos, MAX_PROCESOS);
-                                                         GtkWidget *dlg = gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
-                                                                                                 "Procesos cargados: %d", n_proc);
-                                                         gtk_dialog_run(GTK_DIALOG(dlg));
-                                                         gtk_widget_destroy(dlg);
-                                                     }),
-                     NULL);
-
-    g_signal_connect(btn_rec, "clicked", G_CALLBACK(+[](GtkWidget *b, gpointer d)
-                                                    {
-                                                        n_recur = cargar_recursos("data/recursos.txt", recursos, MAX_RECURSOS);
-                                                        GtkWidget *dlg = gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
-                                                                                                "Recursos cargados: %d", n_recur);
-                                                        gtk_dialog_run(GTK_DIALOG(dlg));
-                                                        gtk_widget_destroy(dlg);
-                                                    }),
-                     NULL);
-
-    g_signal_connect(btn_acc, "clicked", G_CALLBACK(+[](GtkWidget *b, gpointer d)
-                                                    {
-                                                        n_acc = cargar_acciones("data/acciones.txt", acciones, MAX_ACCIONES);
-                                                        GtkWidget *dlg = gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
-                                                                                                "Acciones cargadas: %d", n_acc);
-                                                        gtk_dialog_run(GTK_DIALOG(dlg));
-                                                        gtk_widget_destroy(dlg);
-                                                    }),
-                     NULL);
-
-    // ▶️ Run simulation (por ahora solo muestra Gantt simulado)
-    g_signal_connect(btn_run, "clicked", G_CALLBACK(+[](GtkWidget *b, gpointer d)
-                                                    {
-                                                        gtk_container_foreach(GTK_CONTAINER(gantt_area), (GtkCallback)gtk_widget_destroy, NULL);
-                                                        gtk_container_foreach(GTK_CONTAINER(panel_metrics), (GtkCallback)gtk_widget_destroy, NULL);
-
-                                                        // Simulación dummy: 24 ciclos con accesos alternos
-                                                        for (int i = 0; i < n_proc; i++)
-                                                        {
-                                                            GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
-                                                            gtk_box_pack_start(GTK_BOX(hbox), gtk_label_new(procesos[i].pid), FALSE, FALSE, 4);
-                                                            for (int c = 0; c < 24; c++)
-                                                            {
-                                                                GtkWidget *lbl = gtk_label_new((c + i) % 5 == 0 ? "W" : "A"); // W=WAITING, A=ACCESSED
-                                                                GtkWidget *frame = gtk_frame_new(NULL);
-                                                                GtkWidget *event = gtk_event_box_new();
-                                                                gtk_container_add(GTK_CONTAINER(event), lbl);
-
-                                                                GdkRGBA color;
-                                                                gdk_rgba_parse(&color, ((c + i) % 5 == 0) ? "lightcoral" : "lightgreen");
-                                                                gtk_widget_override_background_color(event, GTK_STATE_FLAG_NORMAL, &color);
-
-                                                                gtk_container_add(GTK_CONTAINER(frame), event);
-                                                                gtk_box_pack_start(GTK_BOX(hbox), frame, FALSE, FALSE, 1);
-                                                            }
-                                                            gtk_box_pack_start(GTK_BOX(gantt_area), hbox, FALSE, FALSE, 2);
-                                                        }
-
-                                                        gtk_box_pack_start(GTK_BOX(panel_metrics), gtk_label_new("📊 Simulación de acceso completada."), FALSE, FALSE, 2);
-                                                        gtk_widget_show_all(gantt_area);
-                                                        gtk_widget_show_all(panel_metrics);
-                                                    }),
-                     NULL);
+    // Conectar eventos
+    g_signal_connect(btn_proc, "clicked", G_CALLBACK(on_cargar_procesos), NULL);
+    g_signal_connect(btn_rec, "clicked", G_CALLBACK(on_cargar_recursos), NULL);
+    g_signal_connect(btn_acc, "clicked", G_CALLBACK(on_cargar_acciones), NULL);
+    g_signal_connect(btn_run, "clicked", G_CALLBACK(on_run_simulacion_b), NULL);
 
     g_signal_connect(ventana, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     gtk_widget_show_all(ventana);
-    gtk_main();
 }

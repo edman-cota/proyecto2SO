@@ -51,6 +51,24 @@ void mostrar_ventana_inicio()
     gtk_main();
 }
 
+static GdkRGBA color_para_pid(const char *pid)
+{
+    GdkRGBA color;
+    unsigned hash = 0;
+    for (int i = 0; pid[i]; i++)
+        hash = pid[i] + (hash << 6) + (hash << 16) - hash;
+
+    int r = (hash & 0xFF0000) >> 16;
+    int g = (hash & 0x00FF00) >> 8;
+    int b = (hash & 0x0000FF);
+
+    color.red = (double)(r % 200 + 55) / 255.0;
+    color.green = (double)(g % 200 + 55) / 255.0;
+    color.blue = (double)(b % 200 + 55) / 255.0;
+    color.alpha = 1.0;
+    return color;
+}
+
 static void construir_leyenda()
 {
     gtk_container_foreach(GTK_CONTAINER(leyenda_box), (GtkCallback)gtk_widget_destroy, NULL);
@@ -101,24 +119,6 @@ static void construir_leyenda()
     }
 
     gtk_widget_show_all(leyenda_box);
-}
-
-static GdkRGBA color_para_pid(const char *pid)
-{
-    GdkRGBA color;
-    unsigned hash = 0;
-    for (int i = 0; pid[i]; i++)
-        hash = pid[i] + (hash << 6) + (hash << 16) - hash;
-
-    int r = (hash & 0xFF0000) >> 16;
-    int g = (hash & 0x00FF00) >> 8;
-    int b = (hash & 0x0000FF);
-
-    color.red = (double)(r % 200 + 55) / 255.0;
-    color.green = (double)(g % 200 + 55) / 255.0;
-    color.blue = (double)(b % 200 + 55) / 255.0;
-    color.alpha = 1.0;
-    return color;
 }
 
 gboolean animar_gantt(gpointer data)

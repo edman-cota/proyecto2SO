@@ -25,9 +25,21 @@ int num_recursos = 0;
 Action acciones[MAX_ACCIONES];
 int num_acciones = 0;
 
-extern int num_procesos_b;
-extern int num_recursos_b;
-extern int num_acciones_b;
+Recurso recursos_b[MAX_RECURSOS];
+int num_recursos_b;
+
+AccionB acciones_b[MAX_ACCIONES];
+int num_acciones_b;
+
+typedef struct
+{
+    int id;
+    char nombre[50];
+    // otras propiedades que tengas en procesos
+} Proceso;
+
+Proceso procesos_b[MAX_PROCESOS];
+int num_procesos_b = 0;
 
 // Función auxiliar para convertir string a ActionType
 ActionType string_to_action_type(const char *str)

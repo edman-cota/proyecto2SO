@@ -23,6 +23,34 @@ typedef struct
     char pid[MAX_PID_LEN];
 } TimelineEntry;
 
+typedef struct
+{
+    char pid[MAX_PID_LEN];
+    int burst_time;
+    int arrival_time;
+    int priority;
+} ProcessB;
+
+typedef struct
+{
+    char name[32];
+    int contador; // cantidad de recursos disponibles (semaforo o mutex=1)
+} Resource;
+
+typedef enum
+{
+    READ,
+    WRITE
+} ActionType;
+
+typedef struct
+{
+    char pid[MAX_PID_LEN];
+    ActionType action;
+    char resource[32];
+    int ciclo;
+} Action;
+
 int simular_fifo(Process *procesos, int n, TimelineEntry timeline[], int *ciclos);
 int simular_sjf(Process *procesos, int n, TimelineEntry timeline[], int *ciclos);
 int simular_srt(Process *procesos, int n, TimelineEntry timeline[], int *ciclos);

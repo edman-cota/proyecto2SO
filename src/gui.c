@@ -25,6 +25,8 @@ int num_recursos = 0;
 Action acciones[MAX_ACCIONES];
 int num_acciones = 0;
 
+extern int num_procesos_b;
+
 // Función auxiliar para convertir string a ActionType
 ActionType string_to_action_type(const char *str)
 {

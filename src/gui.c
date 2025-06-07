@@ -556,7 +556,6 @@ void mostrar_ventana_sincronizacion()
     g_signal_connect(btn_proc, "clicked", G_CALLBACK(cargar_procesos_b), NULL);
     g_signal_connect(btn_rec, "clicked", G_CALLBACK(cargar_recursos_b), NULL);
     g_signal_connect(btn_acc, "clicked", G_CALLBACK(cargar_acciones_b), NULL);
-    g_signal_connect(btn_run, "clicked", G_CALLBACK(run_simulacion_b), NULL);
     g_signal_connect(ventana, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     gtk_widget_show_all(ventana);

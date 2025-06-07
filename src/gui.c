@@ -22,7 +22,6 @@ typedef struct
 } ProcessB;
 
 ProcessB procesos[MAX_PROCESOS];
-int num_procesos = 0;
 
 #define MAX_LINEAS 5 // Máximo de algoritmos activos
 

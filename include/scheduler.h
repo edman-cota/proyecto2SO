@@ -50,6 +50,7 @@ typedef struct
 {
     char name[50];
     int estado;
+    int contador; // cantidad de recursos disponibles (semaforo o mutex=1)
 } Recurso;
 
 typedef enum

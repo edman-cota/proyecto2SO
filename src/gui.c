@@ -13,44 +13,14 @@
 #define MAX_LINEA 128
 #define MAX_PID_LEN 16
 
-typedef struct
-{
-    char pid[MAX_PID_LEN];
-    int burst_time;
-    int arrival_time;
-    int priority;
-} ProcessB;
-
-ProcessB procesos[MAX_PROCESOS];
-
 #define MAX_LINEAS 5 // Máximo de algoritmos activos
 
 #define MAX_RECURSOS 50
-
-typedef struct
-{
-    char name[32];
-    int contador;
-} Resource;
 
 Resource recursos[MAX_RECURSOS];
 int num_recursos = 0;
 
 #define MAX_ACCIONES 500
-
-typedef enum
-{
-    READ,
-    WRITE
-} ActionType;
-
-typedef struct
-{
-    char pid[MAX_PID_LEN];
-    ActionType action;
-    char resource[32];
-    int ciclo;
-} Action;
 
 Action acciones[MAX_ACCIONES];
 int num_acciones = 0;

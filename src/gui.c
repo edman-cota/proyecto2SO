@@ -17,7 +17,7 @@
 
 #define MAX_RECURSOS 50
 
-Resource recursos[MAX_RECURSOS];
+Recurso recursos[MAX_RECURSOS];
 int num_recursos = 0;
 
 #define MAX_ACCIONES 500

@@ -46,6 +46,12 @@ typedef struct
     int contador; // cantidad de recursos disponibles (semaforo o mutex=1)
 } Resource;
 
+typedef struct
+{
+    char nombre[50];
+    int estado;
+} Recurso;
+
 typedef enum
 {
     READ,

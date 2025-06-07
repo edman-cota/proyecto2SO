@@ -388,7 +388,7 @@ void mostrar_ventana_algoritmos()
 
 int cargar_procesos_b(const char *filename)
 {
-    FILE *file = fopen(filename, "r");
+    FILE *file = fopen("data/procesos.txt", "r");
     if (!file)
     {
         perror("Error al abrir archivo de procesos");
@@ -416,7 +416,7 @@ int cargar_procesos_b(const char *filename)
 
 int cargar_recursos_b(const char *filename)
 {
-    FILE *file = fopen(filename, "r");
+    FILE *file = fopen("data/recursos.txt", "r");
     if (!file)
     {
         perror("Error al abrir archivo de recursos");
@@ -441,7 +441,7 @@ int cargar_recursos_b(const char *filename)
 
 int cargar_acciones_b(const char *filename)
 {
-    FILE *file = fopen(filename, "r");
+    FILE *file = fopen("data/acciones.txt", "r");
     if (!file)
     {
         perror("Error al abrir archivo de acciones");

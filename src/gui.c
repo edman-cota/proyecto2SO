@@ -56,7 +56,7 @@ static void construir_leyenda()
     gtk_container_foreach(GTK_CONTAINER(leyenda_box), (GtkCallback)gtk_widget_destroy, NULL);
 
     // Obtener lista única de PIDs usados
-    char vistos[MAX_PROCESOS][MAX_PID];
+    char vistos[MAX_PROCESOS][MAX_PID_LEN];
     int n_vistos = 0;
 
     for (int l = 0; l < num_lineas; l++)

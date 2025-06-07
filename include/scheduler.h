@@ -48,7 +48,7 @@ typedef struct
 
 typedef struct
 {
-    char nombre[50];
+    char name[50];
     int estado;
 } Recurso;
 

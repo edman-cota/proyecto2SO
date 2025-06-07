@@ -173,6 +173,7 @@ gboolean animar_gantt(gpointer data)
 
             GtkWidget *event = gtk_event_box_new();
             GtkWidget *label = gtk_label_new(timelines[l][c].pid);
+            gtk_widget_override_color(label, GTK_STATE_FLAG_NORMAL, &(GdkRGBA){1.0, 1.0, 1.0, 1.0});
             gtk_container_add(GTK_CONTAINER(event), label);
 
             GdkRGBA color = color_para_pid(timelines[l][c].pid);

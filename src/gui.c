@@ -5,7 +5,76 @@
 #include "scheduler.h"
 #include "file_loader.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_PROCESOS 100
+#define MAX_LINEA 128
+#define MAX_PID_LEN 16
+
+typedef struct
+{
+    char pid[MAX_PID_LEN];
+    int burst_time;
+    int arrival_time;
+    int priority;
+} ProcessB;
+
+ProcessB procesos[MAX_PROCESOS];
+int num_procesos = 0;
+
 #define MAX_LINEAS 5 // Máximo de algoritmos activos
+
+#define MAX_RECURSOS 50
+
+typedef struct
+{
+    char name[32];
+    int contador;
+} Resource;
+
+Resource recursos[MAX_RECURSOS];
+int num_recursos = 0;
+
+#define MAX_ACCIONES 500
+
+typedef enum
+{
+    READ,
+    WRITE
+} ActionType;
+
+typedef struct
+{
+    char pid[MAX_PID_LEN];
+    ActionType action;
+    char resource[32];
+    int ciclo;
+} Action;
+
+Action acciones[MAX_ACCIONES];
+int num_acciones = 0;
+
+// Función auxiliar para convertir string a ActionType
+ActionType string_to_action_type(const char *str)
+{
+    if (strcmp(str, "READ") == 0)
+        return READ;
+    if (strcmp(str, "WRITE") == 0)
+        return WRITE;
+    // Por defecto:
+    return READ;
+}
+
+#define MAX_CICLOS 1000
+typedef enum
+{
+    WAITING,
+    ACCESSED
+} EstadoAccion;
+
+EstadoAccion timeline[MAX_PROCESOS][MAX_CICLOS];
 
 static GtkWidget *lineas_gantt[MAX_LINEAS]; // 1 por algoritmo
 static TimelineEntry timelines[MAX_LINEAS][MAX_CICLOS];
@@ -346,6 +415,98 @@ void mostrar_ventana_algoritmos()
 
     gtk_widget_show_all(ventana);
     gtk_main();
+}
+
+int cargar_procesos_b(const char *filename)
+{
+    FILE *file = fopen(filename, "r");
+    if (!file)
+    {
+        perror("Error al abrir archivo de procesos");
+        return 0;
+    }
+    char linea[MAX_LINEA];
+    num_procesos = 0;
+    while (fgets(linea, sizeof(linea), file) && num_procesos < MAX_PROCESOS)
+    {
+        // Formato: P1, 8, 0, 1
+        char pid[MAX_PID_LEN];
+        int bt, at, prio;
+        if (sscanf(linea, "%[^,], %d, %d, %d", pid, &bt, &at, &prio) == 4)
+        {
+            strcpy(procesos[num_procesos].pid, pid);
+            procesos[num_procesos].burst_time = bt;
+            procesos[num_procesos].arrival_time = at;
+            procesos[num_procesos].priority = prio;
+            num_procesos++;
+        }
+    }
+    fclose(file);
+    return 1;
+}
+
+int cargar_recursos_b(const char *filename)
+{
+    FILE *file = fopen(filename, "r");
+    if (!file)
+    {
+        perror("Error al abrir archivo de recursos");
+        return 0;
+    }
+    char linea[MAX_LINEA];
+    num_recursos = 0;
+    while (fgets(linea, sizeof(linea), file) && num_recursos < MAX_RECURSOS)
+    {
+        char name[32];
+        int contador;
+        if (sscanf(linea, "%[^,], %d", name, &contador) == 2)
+        {
+            strcpy(recursos[num_recursos].name, name);
+            recursos[num_recursos].contador = contador;
+            num_recursos++;
+        }
+    }
+    fclose(file);
+    return 1;
+}
+
+int cargar_acciones_b(const char *filename)
+{
+    FILE *file = fopen(filename, "r");
+    if (!file)
+    {
+        perror("Error al abrir archivo de acciones");
+        return 0;
+    }
+    char linea[MAX_LINEA];
+    num_acciones = 0;
+    while (fgets(linea, sizeof(linea), file) && num_acciones < MAX_ACCIONES)
+    {
+        char pid[MAX_PID_LEN], accion_str[8], recurso[32];
+        int ciclo;
+        if (sscanf(linea, "%[^,], %[^,], %[^,], %d", pid, accion_str, recurso, &ciclo) == 4)
+        {
+            strcpy(acciones[num_acciones].pid, pid);
+            acciones[num_acciones].action = string_to_action_type(accion_str);
+            strcpy(acciones[num_acciones].resource, recurso);
+            acciones[num_acciones].ciclo = ciclo;
+            num_acciones++;
+        }
+    }
+    fclose(file);
+    return 1;
+}
+
+int buscar_recurso(const char *name)
+{
+    for (int i = 0; i < num_recursos; i++)
+    {
+        if (strcmp(recursos[i].name, name) == 0)
+        {
+            return i;
+        }
+    }
+    return -1; // no encontrado
 }
 
 void mostrar_ventana_sincronizacion()

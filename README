@@ -1,0 +1,60 @@
+Edman Cota 19830
+Edwin de León 22809
+
+# Simulador de Sistemas Operativos – 2025
+
+Este proyecto implementa dos simuladores visuales desarrollados en **C con GTK** para la materia **Sistemas Operativos**.  
+Cada simulador representa un aspecto clave de los sistemas multitarea:
+
+- **Simulador A:** Algoritmos de planificación de procesos
+- **Simulador B:** Mecanismos de sincronización (mutex / semáforos)
+
+---
+
+## Simulador A – Algoritmos de Planificación
+
+Simula de forma visual los principales algoritmos de planificación, incluyendo:
+
+- FIFO
+- SJF
+- SRT
+- Round Robin (con quantum editable)
+- Prioridad
+
+### Funcionalidades
+
+- Carga procesos desde `data/procesos.txt`
+- Diagrama de Gantt animado paso a paso (100ms por ciclo)
+- Colores únicos por proceso
+- Scroll horizontal fluido
+- Métricas por algoritmo: tiempo de espera, retorno y finalización
+- Leyenda de colores por PID
+
+## Simulador B – Mecanismos de Sincronización
+
+Simula la ejecución de procesos que compiten por recursos con políticas de exclusión mutua.
+
+### Funcionalidades
+
+- Carga de procesos, recursos y acciones desde archivos:
+  - `data/procesos.txt`
+  - `data/recursos.txt`
+  - `data/acciones.txt`
+- Selección entre modo **Mutex** o **Semáforo**
+- Visualización tipo Gantt con acceso a recursos:
+  - 🟩 "A": recurso accedido
+  - 🟥 "W": esperando
+- Scroll horizontal para visualizar múltiples ciclos
+- Panel de métricas al finalizar la simulación
+
+## Compilación
+
+```bash
+make
+```
+
+## Ejecución
+
+```bash
+./build/simulador
+```

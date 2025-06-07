@@ -479,54 +479,211 @@ int buscar_recurso(const char *name)
     return -1; // no encontrado
 }
 
+void simular_sincronizacion()
+{
+    // Inicializar todos los recursos como libres
+    for (int i = 0; i < num_recursos_b; i++)
+    {
+        recursos_b[i].estado = 0;
+    }
+
+    // Recorrer todas las acciones en orden de instante
+    for (int i = 0; i < num_acciones_b; i++)
+    {
+        int tipo = acciones_b[i].tipo;
+        char *nombre_recurso = acciones_b[i].recurso;
+
+        // Buscar el índice del recurso
+        int recurso_idx = -1;
+        for (int j = 0; j < num_recursos_b; j++)
+        {
+            if (strcmp(nombre_recurso, recursos_b[j].nombre) == 0)
+            {
+                recurso_idx = j;
+                break;
+            }
+        }
+
+        if (recurso_idx == -1)
+        {
+            printf("❌ Recurso %s no encontrado.\n", nombre_recurso);
+            continue;
+        }
+
+        if (tipo == 1)
+        { // Solicita
+            if (recursos_b[recurso_idx].estado == 0)
+            {
+                // Recurso libre → ocuparlo
+                recursos_b[recurso_idx].estado = 1;
+                acciones_b[i].valid = 1; // Acción válida
+            }
+            else
+            {
+                // Recurso ocupado → acción bloqueada
+                acciones_b[i].valid = 0;
+            }
+        }
+        else if (tipo == 2)
+        {                                       // Libera
+            recursos_b[recurso_idx].estado = 0; // Liberar
+            acciones_b[i].valid = 1;
+        }
+    }
+}
+
+void on_cargar_archivos_clicked(GtkWidget *widget, gpointer data)
+{
+    cargar_procesos_b("procesos.txt");
+    cargar_recursos_b("recursos.txt");
+    cargar_acciones_b("acciones.txt");
+    g_print("✔ Archivos cargados correctamente.\n");
+}
+
+void on_ejecutar_simulacion_clicked(GtkWidget *widget, gpointer data)
+{
+    simular_sincronizacion();      // Simulación lógica
+    gtk_widget_queue_draw(widget); // Redibuja
+}
+
+gboolean dibujar_sincronizacion(GtkWidget *widget, cairo_t *cr, gpointer data)
+{
+    int y_offset = 20;
+    for (int i = 0; i < num_procesos_b; i++)
+    {
+        // Dibujar nombre del proceso
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_move_to(cr, 10, y_offset + i * 40);
+        cairo_show_text(cr, procesos_b[i].nombre);
+    }
+
+    for (int i = 0; i < num_acciones_b; i++)
+    {
+        if (acciones_b[i].valid == 0)
+            cairo_set_source_rgb(cr, 1, 0, 0); // Rojo = bloqueada
+
+        int x = acciones_b[i].instante * 40 + 100;
+        int y = acciones_b[i].pid * 40 + y_offset;
+        char *recurso = acciones_b[i].recurso;
+        int tipo = acciones_b[i].tipo; // 1=solicita, 2=libera
+
+        // Color diferente por tipo de acción
+        if (tipo == 1)
+            cairo_set_source_rgb(cr, 0.2, 0.6, 0.9); // Azul (solicita)
+        else
+            cairo_set_source_rgb(cr, 0.2, 0.8, 0.2); // Verde (libera)
+
+        cairo_rectangle(cr, x, y, 30, 30);
+        cairo_fill(cr);
+
+        // Texto (letra del recurso)
+        cairo_set_source_rgb(cr, 1, 1, 1);
+        cairo_move_to(cr, x + 8, y + 20);
+        cairo_show_text(cr, recurso);
+    }
+
+    return FALSE;
+}
+
 void mostrar_ventana_sincronizacion()
 {
-    GtkWidget *ventana = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(ventana), "Simulador B: Mecanismos de Sincronización");
-    gtk_window_set_default_size(GTK_WINDOW(ventana), 1000, 600);
+    GtkWidget *ventana;
+    GtkWidget *caja_vertical;
+    GtkWidget *caja_botones;
+    GtkWidget *btn_cargar;
+    GtkWidget *btn_run;
+    GtkWidget *scroll;
+    GtkWidget *area_dibujo;
 
-    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+    // Crear ventana
+    ventana = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(ventana), "Simulador B - Mecanismos de Sincronización");
+    gtk_window_set_default_size(GTK_WINDOW(ventana), 900, 400);
+    gtk_window_set_position(GTK_WINDOW(ventana), GTK_WIN_POS_CENTER);
+    g_signal_connect(ventana, "destroy", G_CALLBACK(gtk_widget_destroy), ventana);
 
-    // Controles carga y modo
-    GtkWidget *controles = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+    // Contenedor principal
+    caja_vertical = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_container_add(GTK_CONTAINER(ventana), caja_vertical);
 
-    GtkWidget *modo_combo = gtk_combo_box_text_new();
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(modo_combo), "Mutex");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(modo_combo), "Semáforo");
-    gtk_combo_box_set_active(GTK_COMBO_BOX(modo_combo), 0);
+    // Contenedor de botones
+    caja_botones = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    gtk_box_pack_start(GTK_BOX(caja_vertical), caja_botones, FALSE, FALSE, 5);
 
-    GtkWidget *btn_proc = gtk_button_new_with_label("Cargar Procesos");
-    GtkWidget *btn_rec = gtk_button_new_with_label("Cargar Recursos");
-    GtkWidget *btn_acc = gtk_button_new_with_label("Cargar Acciones");
-    GtkWidget *btn_run = gtk_button_new_with_label("Run Simulation");
+    // Botón cargar
+    btn_cargar = gtk_button_new_with_label("📂 Cargar archivos");
+    gtk_box_pack_start(GTK_BOX(caja_botones), btn_cargar, FALSE, FALSE, 5);
+    g_signal_connect(btn_cargar, "clicked", G_CALLBACK(on_cargar_archivos_clicked), NULL);
 
-    gtk_box_pack_start(GTK_BOX(controles), gtk_label_new("Modo:"), FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(controles), modo_combo, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(controles), btn_proc, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(controles), btn_rec, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(controles), btn_acc, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(controles), btn_run, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(vbox), controles, FALSE, FALSE, 0);
+    // Botón correr
+    btn_run = gtk_button_new_with_label("▶ Correr");
+    gtk_box_pack_start(GTK_BOX(caja_botones), btn_run, FALSE, FALSE, 5);
+    g_signal_connect(btn_run, "clicked", G_CALLBACK(on_ejecutar_simulacion_clicked), NULL);
 
-    // Scroll horizontal para timeline
-    GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
+    // Área de dibujo con scroll
+    scroll = gtk_scrolled_window_new(NULL, NULL);
+    gtk_widget_set_size_request(scroll, 800, 300);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_box_pack_start(GTK_BOX(caja_vertical), scroll, TRUE, TRUE, 0);
 
-    GtkWidget *timeline_area = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-    gtk_container_add(GTK_CONTAINER(scroll), timeline_area);
-    gtk_box_pack_start(GTK_BOX(vbox), scroll, TRUE, TRUE, 2);
+    // Área de dibujo
+    area_dibujo = gtk_drawing_area_new();
+    gtk_widget_set_size_request(area_dibujo, 1500, 300); // Ajusta el tamaño según cantidad de acciones
+    gtk_container_add(GTK_CONTAINER(scroll), area_dibujo);
 
-    // Métricas o estados
-    GtkWidget *metrics_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-    gtk_box_pack_start(GTK_BOX(vbox), metrics_box, FALSE, FALSE, 2);
-
-    gtk_container_add(GTK_CONTAINER(ventana), vbox);
-
-    // Conectar señales (funciones a implementar)
-    g_signal_connect(btn_proc, "clicked", G_CALLBACK(cargar_procesos_b), NULL);
-    g_signal_connect(btn_rec, "clicked", G_CALLBACK(cargar_recursos_b), NULL);
-    g_signal_connect(btn_acc, "clicked", G_CALLBACK(cargar_acciones_b), NULL);
-    g_signal_connect(ventana, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(area_dibujo, "draw", G_CALLBACK(dibujar_sincronizacion), NULL);
 
     gtk_widget_show_all(ventana);
 }
+
+// void mostrar_ventana_sincronizacion()
+// {
+//     GtkWidget *ventana = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+//     gtk_window_set_title(GTK_WINDOW(ventana), "Simulador B: Mecanismos de Sincronización");
+//     gtk_window_set_default_size(GTK_WINDOW(ventana), 1000, 600);
+
+//     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+
+//     // Controles carga y modo
+//     GtkWidget *controles = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+
+//     GtkWidget *modo_combo = gtk_combo_box_text_new();
+//     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(modo_combo), "Mutex");
+//     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(modo_combo), "Semáforo");
+//     gtk_combo_box_set_active(GTK_COMBO_BOX(modo_combo), 0);
+
+//     GtkWidget *btn_proc = gtk_button_new_with_label("Cargar Procesos");
+//     GtkWidget *btn_rec = gtk_button_new_with_label("Cargar Recursos");
+//     GtkWidget *btn_acc = gtk_button_new_with_label("Cargar Acciones");
+//     GtkWidget *btn_run = gtk_button_new_with_label("Run Simulation");
+
+//     gtk_box_pack_start(GTK_BOX(controles), gtk_label_new("Modo:"), FALSE, FALSE, 0);
+//     gtk_box_pack_start(GTK_BOX(controles), modo_combo, FALSE, FALSE, 0);
+//     gtk_box_pack_start(GTK_BOX(controles), btn_proc, FALSE, FALSE, 0);
+//     gtk_box_pack_start(GTK_BOX(controles), btn_rec, FALSE, FALSE, 0);
+//     gtk_box_pack_start(GTK_BOX(controles), btn_acc, FALSE, FALSE, 0);
+//     gtk_box_pack_start(GTK_BOX(controles), btn_run, FALSE, FALSE, 0);
+//     gtk_box_pack_start(GTK_BOX(vbox), controles, FALSE, FALSE, 0);
+
+//     // Scroll horizontal para timeline
+//     GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
+//     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
+
+//     GtkWidget *timeline_area = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+//     gtk_container_add(GTK_CONTAINER(scroll), timeline_area);
+//     gtk_box_pack_start(GTK_BOX(vbox), scroll, TRUE, TRUE, 2);
+
+//     // Métricas o estados
+//     GtkWidget *metrics_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+//     gtk_box_pack_start(GTK_BOX(vbox), metrics_box, FALSE, FALSE, 2);
+
+//     gtk_container_add(GTK_CONTAINER(ventana), vbox);
+
+//     // Conectar señales (funciones a implementar)
+//     g_signal_connect(btn_proc, "clicked", G_CALLBACK(cargar_procesos_b), NULL);
+//     g_signal_connect(btn_rec, "clicked", G_CALLBACK(cargar_recursos_b), NULL);
+//     g_signal_connect(btn_acc, "clicked", G_CALLBACK(cargar_acciones_b), NULL);
+//     g_signal_connect(ventana, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+//     gtk_widget_show_all(ventana);
+// }

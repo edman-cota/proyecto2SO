@@ -33,6 +33,15 @@ typedef struct
 
 typedef struct
 {
+    int instante;
+    int pid;
+    int tipo; // 1=solicita, 2=libera
+    char recurso[20];
+    int valid; // 1=ejecutada, 0=bloqueada
+} AccionB;
+
+typedef struct
+{
     char name[32];
     int contador; // cantidad de recursos disponibles (semaforo o mutex=1)
 } Resource;
